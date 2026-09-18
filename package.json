@@ -1,0 +1,27 @@
+{
+  "name": "smtp-sender",
+  "version": "1.0.0",
+  "description": "Web-based SMTP mail sender with AI assistance",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node --env-file-if-exists=.env server.js",
+    "dev": "node --env-file-if-exists=.env --watch server.js",
+    "test": "node --test",
+    "check": "node --check server.js && node --check security.js && node --check public/app.js",
+    "audit": "pnpm audit --audit-level=moderate"
+  },
+  "dependencies": {
+    "dompurify": "^3.4.15",
+    "express": "^4.22.3",
+    "ipaddr.js": "^2.5.0",
+    "nodemailer": "^10.0.10",
+    "papaparse": "^5.7.0",
+    "quill": "^2.0.3"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@11.24.0"
+}

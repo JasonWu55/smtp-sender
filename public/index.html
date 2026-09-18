@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SMTP Mail Sender</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📧</text></svg>" />
+  <link rel="stylesheet" href="/vendor/quill.snow.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+
+    <!-- ── Header ── -->
+    <header class="header">
+      <div class="header-brand">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
+        <span>SMTP Mail Sender</span>
+      </div>
+      <nav class="header-tabs">
+        <button class="h-tab active" data-tab="compose">✍️ 撰寫</button>
+        <button class="h-tab" data-tab="history">📋 寄送記錄</button>
+      </nav>
+      <div class="header-actions">
+        <button class="btn-icon" id="theme-btn" title="切換主題">🌙</button>
+      </div>
+    </header>
+
+    <!-- ── Main layout ── -->
+    <div class="layout">
+
+      <!-- ── Sidebar: SMTP Profiles ── -->
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <span class="sidebar-title">SMTP 設定檔</span>
+          <button class="btn-add" id="add-profile-btn" title="新增設定檔">+</button>
+        </div>
+        <div class="profile-list" id="profile-list">
+          <div class="profile-empty">尚無設定檔<br><small>點擊右上角 + 新增</small></div>
+        </div>
+      </aside>
+
+      <!-- ── Content area ── -->
+      <main class="content">
+
+        <!-- ── Compose tab ── -->
+        <div class="tab-pane active" id="tab-compose">
+
+          <!-- Email meta fields -->
+          <div class="meta-fields">
+            <div class="meta-row">
+              <label class="meta-label">主旨</label>
+              <input class="meta-input" id="subject" type="text"
+                placeholder="信件主旨，可用 {{name}} 等佔位符" />
+            </div>
+            <div class="meta-row">
+              <label class="meta-label">回覆至</label>
+              <input class="meta-input" id="reply-to" type="text"
+                placeholder="reply@example.com（選填）" />
+            </div>
+            <div class="meta-row">
+              <label class="meta-label">副本 CC</label>
+              <input class="meta-input" id="cc" type="text"
+                placeholder="cc1@x.com, cc2@x.com（選填，可用 {{欄位}}）" />
+            </div>
+            <div class="meta-row">
+              <label class="meta-label">密件 BCC</label>
+              <input class="meta-input" id="bcc" type="text"
+                placeholder="bcc@x.com（選填，可用 {{欄位}}）" />
+            </div>
+          </div>
+
+          <!-- Editor bar -->
+          <div class="editor-bar">
+            <button class="btn-ai" id="ai-toggle-btn">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              AI 寫信助理
+            </button>
+            <div class="draft-group">
+              <div class="draft-dropdown-wrap" id="template-dropdown-wrap">
+                <button class="btn btn-sm btn-secondary" id="templates-btn" title="套用內建範本">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                  範本
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="draft-dropdown" id="template-dropdown">
+                  <div class="draft-dropdown-inner" id="template-list"></div>
+                </div>
+              </div>
+              <button class="btn btn-sm btn-secondary" id="save-draft-btn" title="儲存為草稿或範本">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                儲存草稿
+              </button>
+              <div class="draft-dropdown-wrap" id="draft-dropdown-wrap">
+                <button class="btn btn-sm btn-secondary" id="drafts-btn">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                  草稿 <span class="draft-count" id="draft-count" style="display:none">0</span>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="draft-dropdown" id="draft-dropdown">
+                  <div class="draft-dropdown-inner" id="draft-list"></div>
+                </div>
+              </div>
+            </div>
+            <span class="editor-hint">支援 <code>{{佔位符}}</code> 語法，對應 CSV 欄位名稱</span>
+            <div class="editor-mode-switch" aria-label="編輯模式">
+              <button class="editor-mode-btn active" id="mode-rich-btn" type="button">視覺</button>
+              <button class="editor-mode-btn" id="mode-html-btn" type="button">HTML</button>
+            </div>
+          </div>
+
+          <!-- Active template banner -->
+          <div class="template-banner" id="template-banner" style="display:none">
+            <span class="template-banner-icon">📄</span>
+            <div class="template-banner-text">
+              已套用範本：<strong id="template-banner-name"></strong>
+              <span class="template-banner-hint">目前以 HTML 原始碼編輯，預覽與寄出會保留原始表格版型。</span>
+            </div>
+            <button class="btn btn-sm btn-ghost" id="template-clear-btn">清除標記</button>
+          </div>
+
+          <!-- Quill editor -->
+          <div class="editor-wrap" id="editor-wrap">
+            <div id="editor"></div>
+            <textarea id="html-source-editor" class="html-source-editor" spellcheck="false"></textarea>
+          </div>
+
+          <!-- Recipients -->
+          <div class="recipients-section">
+            <div class="recipients-header">
+              <div class="recipients-title">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                收件人
+                <span class="badge" id="recipient-count">0</span>
+              </div>
+              <div class="recipients-actions">
+                <label class="btn btn-sm btn-secondary" title="匯入 CSV">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  匯入 CSV
+                  <input type="file" id="csv-input" accept=".csv" hidden />
+                </label>
+                <button class="btn btn-sm btn-secondary" id="add-row-btn">+ 手動新增</button>
+                <button class="btn btn-sm btn-ghost" id="clear-recipients-btn">清除</button>
+              </div>
+            </div>
+            <div class="csv-hint" id="csv-hint">
+              CSV 第一列為欄位名稱，<strong>第一欄必須為 email</strong>，每批最多 500 位、檔案上限 5 MB。其他欄可用 <code>{{欄位名}}</code> 引用。
+            </div>
+            <div class="table-wrap">
+              <table class="recipients-table" id="recipients-table">
+                <thead id="table-head">
+                  <tr><th>email</th><th class="col-action"></th></tr>
+                </thead>
+                <tbody id="table-body">
+                  <tr class="table-empty-row"><td colspan="99">尚無收件人</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Action bar -->
+          <div class="action-bar">
+            <div class="send-opt">
+              <label>每封間隔
+                <input type="number" id="send-delay" value="500" min="0" max="30000" step="100" /> ms
+              </label>
+            </div>
+            <div class="action-btns">
+              <button class="btn btn-secondary" id="preview-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                預覽
+              </button>
+              <button class="btn btn-primary" id="send-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                發送 <span id="send-count">0</span> 封
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── History tab ── -->
+        <div class="tab-pane" id="tab-history">
+          <div class="history-wrap">
+            <div class="history-toolbar">
+              <h3>寄送記錄</h3>
+              <button class="btn btn-sm btn-ghost" id="clear-history-btn">清除記錄</button>
+            </div>
+            <div id="history-list">
+              <div class="empty-state">尚無寄送記錄</div>
+            </div>
+          </div>
+        </div>
+
+      </main><!-- /content -->
+
+      <!-- ── AI Panel (slide-over) ── -->
+      <div class="ai-panel" id="ai-panel">
+        <div class="ai-panel-header">
+          <span>✨ AI 寫信助理</span>
+          <button class="btn-icon" id="ai-close-btn">✕</button>
+        </div>
+        <div class="ai-panel-body">
+
+          <div class="ai-field">
+            <label>OpenRouter API Key（僅保留於本次頁面）</label>
+            <div class="input-row">
+              <input type="password" id="or-api-key" placeholder="sk-or-v1-..." autocomplete="off" />
+              <button class="btn btn-sm btn-primary" id="save-api-key-btn">清除</button>
+            </div>
+          </div>
+
+          <div class="ai-field">
+            <label>AI 模型</label>
+            <select id="ai-model">
+              <optgroup label="Anthropic">
+                <option value="anthropic/claude-sonnet-4-5">Claude Sonnet 4.5</option>
+                <option value="anthropic/claude-haiku-4-5">Claude Haiku 4.5 (快)</option>
+                <option value="anthropic/claude-3.5-sonnet">Claude 3.5 Sonnet</option>
+                <option value="anthropic/claude-3.5-haiku" selected>Claude 3.5 Haiku (快)</option>
+              </optgroup>
+              <optgroup label="OpenAI">
+                <option value="openai/gpt-4o">GPT-4o</option>
+                <option value="openai/gpt-4o-mini">GPT-4o Mini (快)</option>
+              </optgroup>
+              <optgroup label="Google">
+                <option value="google/gemini-2.0-flash-001">Gemini 2.0 Flash (快)</option>
+                <option value="google/gemini-pro-1.5">Gemini Pro 1.5</option>
+              </optgroup>
+              <optgroup label="Meta">
+                <option value="meta-llama/llama-3.3-70b-instruct">Llama 3.3 70B</option>
+              </optgroup>
+            </select>
+          </div>
+
+          <div class="ai-field">
+            <label>描述你想寫的信</label>
+            <textarea id="ai-prompt" rows="5"
+              placeholder="例如：寫一封活動邀請函，邀請 {{name}} 參加我們的年度科技峰會。強調免費入場和優質講者陣容。"></textarea>
+          </div>
+
+          <div class="ai-options-row">
+            <div class="ai-field-inline">
+              <label>語氣</label>
+              <select id="ai-tone">
+                <option value="professional">專業</option>
+                <option value="friendly">友好</option>
+                <option value="formal">正式</option>
+                <option value="casual">輕鬆</option>
+                <option value="persuasive">說服力</option>
+              </select>
+            </div>
+            <div class="ai-field-inline">
+              <label>語言</label>
+              <select id="ai-lang">
+                <option value="zh-TW">繁體中文</option>
+                <option value="zh-CN">簡體中文</option>
+                <option value="en">English</option>
+                <option value="ja">日本語</option>
+                <option value="ko">한국어</option>
+              </select>
+            </div>
+          </div>
+
+          <button class="btn btn-primary btn-full" id="ai-generate-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            生成內容
+          </button>
+
+          <div class="ai-output-wrap" id="ai-output-wrap" style="display:none">
+            <div class="ai-output-header">
+              <span>生成結果</span>
+              <div class="ai-output-actions">
+                <button class="btn btn-sm btn-secondary" id="ai-preview-toggle">HTML 預覽</button>
+                <button class="btn btn-sm btn-primary" id="ai-insert-btn">插入</button>
+                <button class="btn btn-sm btn-primary" id="ai-replace-btn">取代</button>
+              </div>
+            </div>
+            <div class="ai-output-tabs">
+              <div class="ai-output-code" id="ai-output-code"></div>
+              <iframe sandbox="" referrerpolicy="no-referrer" title="信件內容預覽" class="ai-output-preview" id="ai-output-preview" style="display:none"></iframe>
+            </div>
+          </div>
+
+        </div><!-- /ai-panel-body -->
+      </div><!-- /ai-panel -->
+
+    </div><!-- /layout -->
+  </div><!-- /app -->
+
+  <!-- ══════════════════ MODALS ══════════════════ -->
+
+  <!-- Profile modal -->
+  <div class="modal-overlay" id="profile-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="profile-modal-title">新增 SMTP 設定檔</h3>
+        <button class="btn-icon modal-close" data-modal="profile-modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="profile-edit-id" />
+        <div class="form-field">
+          <label>設定檔名稱 <span class="req">*</span></label>
+          <input type="text" id="pf-name" placeholder="Gmail 工作帳號" />
+        </div>
+        <div class="form-row">
+          <div class="form-field flex-2">
+            <label>SMTP 主機 <span class="req">*</span></label>
+            <input type="text" id="pf-host" placeholder="smtp.gmail.com" />
+          </div>
+          <div class="form-field flex-1">
+            <label>Port</label>
+            <input type="number" id="pf-port" value="587" placeholder="587" />
+          </div>
+        </div>
+        <div class="form-field">
+          <label class="checkbox-label">
+            <input type="checkbox" id="pf-secure" />
+            <span>使用 SSL/TLS（Port 465 勾選此項）</span>
+          </label>
+        </div>
+        <div class="form-row">
+          <div class="form-field">
+            <label>帳號 <span class="req">*</span></label>
+            <input type="text" id="pf-username" placeholder="user@gmail.com" autocomplete="off" />
+          </div>
+          <div class="form-field">
+            <label>密碼 / App Password（僅保留於本次頁面）<span class="req">*</span></label>
+            <input type="password" id="pf-password" placeholder="••••••••" autocomplete="new-password" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-field">
+            <label>寄件人名稱</label>
+            <input type="text" id="pf-from-name" placeholder="John Doe" />
+          </div>
+          <div class="form-field">
+            <label>寄件人 Email（選填）</label>
+            <input type="text" id="pf-from-email" placeholder="預設與帳號相同" />
+          </div>
+        </div>
+        <div class="test-result" id="smtp-test-result" style="display:none"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="test-smtp-btn">🔌 測試連線</button>
+        <div style="flex:1"></div>
+        <button class="btn btn-ghost modal-close" data-modal="profile-modal">取消</button>
+        <button class="btn btn-primary" id="profile-save-btn">儲存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Preview modal -->
+  <div class="modal-overlay" id="preview-modal">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h3>預覽信件</h3>
+        <div style="display:flex;align-items:center;gap:8px">
+          <label class="preview-label">收件人：
+            <select id="preview-select"></select>
+          </label>
+          <button class="btn-icon modal-close" data-modal="preview-modal">✕</button>
+        </div>
+      </div>
+      <div class="modal-body" style="padding:0">
+        <div class="preview-meta">
+          <div><strong>寄件人：</strong><span id="pv-from"></span></div>
+          <div><strong>收件人：</strong><span id="pv-to"></span></div>
+          <div id="pv-cc-row" style="display:none"><strong>副本 CC：</strong><span id="pv-cc"></span></div>
+          <div id="pv-bcc-row" style="display:none"><strong>密件 BCC：</strong><span id="pv-bcc"></span></div>
+          <div><strong>主旨：</strong><span id="pv-subject"></span></div>
+        </div>
+        <iframe sandbox="" referrerpolicy="no-referrer" title="信件內容預覽" id="preview-frame" class="preview-frame"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- Save draft modal -->
+  <div class="modal-overlay" id="save-draft-modal">
+    <div class="modal" style="max-width:400px">
+      <div class="modal-header">
+        <h3>儲存草稿</h3>
+        <button class="btn-icon modal-close" data-modal="save-draft-modal">✕</button>
+      </div>
+      <div class="modal-body" style="gap:10px">
+        <div class="form-field">
+          <label>草稿名稱</label>
+          <input type="text" id="draft-name-input" placeholder="例如：活動邀請信範本" />
+        </div>
+        <div class="draft-save-preview" id="draft-save-preview"></div>
+      </div>
+      <div class="modal-footer" style="justify-content:flex-end;gap:8px">
+        <button class="btn btn-ghost modal-close" data-modal="save-draft-modal">取消</button>
+        <button class="btn btn-primary" id="draft-save-confirm-btn">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          儲存
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Send progress modal -->
+  <div class="modal-overlay" id="send-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="send-modal-title">寄送中…</h3>
+      </div>
+      <div class="modal-body">
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+        <div class="progress-text" id="progress-text">準備中…</div>
+        <div class="send-log" id="send-log"></div>
+      </div>
+      <div class="modal-footer" style="justify-content:flex-end;gap:8px">
+        <button class="btn btn-ghost" id="send-abort-btn">中止</button>
+        <button class="btn btn-primary" id="send-done-btn" disabled>完成</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="/vendor/quill.js"></script>
+  <script src="/vendor/papaparse.min.js"></script>
+  <script src="/vendor/purify.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

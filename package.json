@@ -12,7 +12,7 @@
     "audit": "pnpm audit --audit-level=moderate"
   },
   "dependencies": {
-    "dompurify": "^3.4.15",
+    "dompurify": "^3.4.16",
     "express": "^4.22.3",
     "ipaddr.js": "^2.5.0",
     "nodemailer": "^10.0.10",

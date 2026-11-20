@@ -21,8 +21,8 @@ importers:
         specifier: ^10.0.10
         version: 10.0.10
       papaparse:
-        specifier: ^5.7.0
-        version: 5.7.0
+        specifier: ^5.7.1
+        version: 5.7.1
       quill:
         specifier: ^2.0.3
         version: 2.0.3
@@ -243,8 +243,8 @@ packages:
     resolution: {integrity: sha512-oVlzkg3ENAhCk2zdv7IJwd/QUD4z2RxRwpkcGY8psCVcCYZNq4wYnVWALHM+brtuJjePWiYF/ClmuDr8Ch5+kg==}
     engines: {node: '>= 0.8'}
 
-  papaparse@5.7.0:
-    resolution: {integrity: sha512-qBGxg/7Q3Kl9Wfhrz2Z74UnvnHTXLNG6jmKJFeBvP2+y4lV7So+7SR62+Zd47JvdrCkX+nDcnr0ObPzek/+6RA==}
+  papaparse@5.7.1:
+    resolution: {integrity: sha512-qOR+UDWv6D3hMxnWWOk0ZpBdCkd+kw5Yh7aXOaNSQU8A+73EA2bhW7EiUix/hY0yulUi5FRvt7PpYSI2VDvY0g==}
 
   parchment@3.0.0:
     resolution: {integrity: sha512-HUrJFQ/StvgmXRcQ1ftY6VEZUq3jA2t9ncFN4F84J/vN0/FPpQF+8FKXb3l6fLces6q0uOHj6NJn+2xvZnxO6A==}
@@ -560,7 +560,7 @@ snapshots:
     dependencies:
       ee-first: 1.1.1
 
-  papaparse@5.7.0: {}
+  papaparse@5.7.1: {}
 
   parchment@3.0.0: {}
 
